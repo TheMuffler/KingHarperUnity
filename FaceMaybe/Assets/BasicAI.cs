@@ -1,10 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class BasicAI : MonoBehaviour {
 
 	public GameObject targetzone;
 	GameObject targetenemy;
+	List<GameObject> enemies = new List<GameObject> ();
 
 	NavMeshAgent nav;
 	float attacktime = 0;
@@ -20,8 +22,6 @@ public class BasicAI : MonoBehaviour {
 		ComponentManager<BasicAI>.instance.UnRegister (gameObject);
 	}
 
-
-
 	// Use this for initialization
 	void Start () {
 		nav = GetComponent<NavMeshAgent> ();
@@ -29,6 +29,7 @@ public class BasicAI : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
+		HandleEnemies ();
 
 		if (targetenemy == null) {
 			nav.destination = targetzone.transform.position;
@@ -47,14 +48,37 @@ public class BasicAI : MonoBehaviour {
 		}
 	}
 
+	void HandleEnemies(){
+		GameObject toReturn = null;
+		float dist = Mathf.Infinity;
+		float temp = 0;
+
+		for (int i = 0; i < enemies.Count;) {
+			if(enemies[i] == null){
+				enemies.RemoveAt(i);
+				continue;
+			}
+		
+			temp = Vector3.SqrMagnitude(enemies[i].transform.position-transform.position);
+			if(temp < dist){
+				toReturn = enemies[i];
+				dist = temp;
+			}
+			++i;
+		}
+
+		targetenemy = toReturn;
+	}
+
 	void OnTriggerEnter(Collider other){
 		if (other.gameObject.CompareTag("Character") && FactionScript.AreEnemies (gameObject, other.gameObject)) {
-			targetenemy = other.gameObject;
+			enemies.Add(other.gameObject);
 		}
 	}
 
 	void OnTriggerExit(Collider other){
-		if (other.gameObject == targetenemy)
-			targetenemy = null;
+		if (other.gameObject.CompareTag("Character") && FactionScript.AreEnemies (gameObject, other.gameObject)) {
+			enemies.Remove(other.gameObject);
+		}
 	}
 }
